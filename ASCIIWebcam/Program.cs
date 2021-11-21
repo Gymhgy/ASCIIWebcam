@@ -18,9 +18,8 @@ namespace ASCIIWebcam {
             int fontSize = 6;
             SKFont font = new SKFont(SKTypeface.FromFamilyName("Consolas"), fontSize);
             SKPaint paint = new SKPaint(font);
+            paint.Color = SKColor.Parse("#FFFFFF");
 
-            paint.TextAlign = SKTextAlign.Center;
-            paint.Color = SKColor.Parse("#000000");
             var metrics = paint.FontMetrics;
             int width = fontSize / 2;
             int height = fontSize;
@@ -45,26 +44,14 @@ namespace ASCIIWebcam {
                         for (int j = 0; j < imgWidth; j += width) {
                             int rectWidth = j + width > imgWidth ? imgWidth - j : width;
 
-                            double rightIntensity = 0, leftIntensity = 0, topIntensity = 0, bottomIntensity = 0, centerIntensity = 0;
+                            double intensity = 0;
                             for (int row = i; row < i + rectHeight; row++) {
                                 for (int col = j; col < j + rectWidth; col++) {
-                                    bool center = true;
-                                    if (row < topBottomSize) { center = false; topIntensity += data[row, col, 0]; }
-                                    if (row >= height - topBottomSize) { center = false; bottomIntensity += data[row, col, 0]; }
-
-                                    if (col < leftRightSize) { center = false; leftIntensity += data[row, col, 0]; }
-                                    if (col >= width - leftRightSize) { center = false; rightIntensity += data[row, col, 0]; }
-
-                                    if (center) centerIntensity += data[row, col, 0];
+                                    intensity += 255-data[row, col, 0];
                                 }
                             }
-                            rightIntensity /= area;
-                            leftIntensity /= area;
-                            topIntensity /= area;
-                            bottomIntensity /= area;
-                            centerIntensity /= area;
-                            var intensity = new CharIntensity((char)1, rightIntensity, leftIntensity, topIntensity, bottomIntensity, centerIntensity);
-                            char c = intensities.OrderByDescending(charIntensity => charIntensity.DistanceMetric(intensity)).First().Char;
+
+                            char c = intensities.OrderBy(charIntensity => Math.Abs(charIntensity.intensity - intensity)).First().c;
                             line.Append(c.ToString());
                         }
                         Console.WriteLine(line);
@@ -73,7 +60,7 @@ namespace ASCIIWebcam {
             }
         }
 
-        static List<CharIntensity> intensities = new List<CharIntensity>();
+        static List<(char c, double intensity)> intensities = new List<(char c, double intensity)>();
 
         static void ComputeIntensityMap(SKPaint paint, int leftRightSize, int topBottomSize) {
             var metrics = paint.FontMetrics;
@@ -91,34 +78,27 @@ namespace ASCIIWebcam {
             using (SKBitmap bitmap = new SKBitmap(imageInfo)) {
                 SKCanvas canvas = new SKCanvas(bitmap);
                 for (char i = ' '; i < 127; i++) {
-                    canvas.Clear(SKColors.White);
-                    canvas.DrawText(i.ToString(), width / 2, height-descent, paint);
+                    canvas.Clear(SKColors.Black);
+                    canvas.DrawText(i.ToString(), 0, height-descent, paint);
 
-                    double rightIntensity = 0, leftIntensity = 0, topIntensity = 0, bottomIntensity = 0, centerIntensity = 0;
+                    double intensity = 0;
                     int area = width * height;
                     unsafe {
                         byte* ptr = (byte*)bitmap.GetPixels().ToPointer();
-                        for (int row = 0; row < width; row++) {
-                            for(int col = 0; col < height; col++) {
-                                bool center = true;
-                                if (row < topBottomSize) { center = false; topIntensity += *ptr; }
-                                if (row >= height - topBottomSize) { center = false; bottomIntensity += *ptr; }
-
-                                if (col < leftRightSize) { center = false; leftIntensity += *ptr; }
-                                if (col >= width - leftRightSize) { center = false; rightIntensity += *ptr; }
-
-                                if (center) centerIntensity += *ptr;
-
-                                ptr++;
-                            }
+                        for (int pixel = 0; pixel < area; pixel++) {
+                            intensity += *ptr++;
                         }
                     }
-                    rightIntensity /= area;
-                    leftIntensity /= area;
-                    topIntensity /= area;
-                    bottomIntensity /= area;
-                    centerIntensity /= area;
-                    intensities.Add(new CharIntensity(i, rightIntensity, leftIntensity, topIntensity, bottomIntensity, centerIntensity));
+                    if(i == 'g' || i == 'h' || i == ' ')
+                    {
+                        using (var data = bitmap.Encode(SKEncodedImageFormat.Png, 80))
+                        using (var stream = File.OpenWrite((int)i + "_abc.png"))
+                        {
+                            // save the data to a stream
+                            data.SaveTo(stream);
+                        }
+                    }
+                    intensities.Add((i, intensity));
                 }
             }
         }

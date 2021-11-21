@@ -89,15 +89,7 @@ namespace ASCIIWebcam {
                             intensity += *ptr++;
                         }
                     }
-                    if(i == 'g' || i == 'h' || i == ' ')
-                    {
-                        using (var data = bitmap.Encode(SKEncodedImageFormat.Png, 80))
-                        using (var stream = File.OpenWrite((int)i + "_abc.png"))
-                        {
-                            // save the data to a stream
-                            data.SaveTo(stream);
-                        }
-                    }
+
                     intensities.Add((i, intensity));
                 }
             }

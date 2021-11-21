@@ -12,8 +12,6 @@ using SkiaSharp;
 namespace ASCIIWebcam {
     class Program {
 
-        const string map = "@#%xo;:,. ";
-
         static void Main(string[] args) {
             int fontSize = 6;
             SKFont font = new SKFont(SKTypeface.FromFamilyName("Consolas"), fontSize);

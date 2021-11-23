@@ -31,6 +31,7 @@ namespace ASCIIWebcam {
                 Console.SetCursorPosition(0, 0);
                 using (Mat mat = capture.QueryFrame()) {
                     Image<Gray, byte> img = mat.ToImage<Gray, byte>();
+                    CvInvoke.CLAHE(img, 40, new Size(8,8), img);
 
                     byte[,,] data = img.Data;
                     int imgHeight = img.Height, imgWidth = img.Width;
@@ -45,7 +46,7 @@ namespace ASCIIWebcam {
                             double intensity = 0;
                             for (int row = i; row < i + rectHeight; row++) {
                                 for (int col = j; col < j + rectWidth; col++) {
-                                    intensity += 255-data[row, col, 0];
+                                    intensity += data[row, col, 0];
                                 }
                             }
 
@@ -66,10 +67,6 @@ namespace ASCIIWebcam {
             int fontSize = (int)paint.ToFont().Size;
             int width = fontSize / 2;
             int height = fontSize;
-
-            Console.WriteLine(width);
-            Console.WriteLine(metrics.XHeight);
-            Console.WriteLine(paint.MeasureText("!"));
 
             SKImageInfo imageInfo = new SKImageInfo(width, height, SKColorType.Gray8);
 
